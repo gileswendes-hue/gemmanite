@@ -7,6 +7,7 @@
     <style>
         :root {
             --bg: #07060f;
+            --spotify-h: 84px;
             --bar-h: 52px;
             --glass: rgba(255, 255, 255, 0.1);
             --border: rgba(255, 255, 255, 0.16);
@@ -22,13 +23,40 @@
             color: #fff;
         }
 
+        #rainbow-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #snow-container {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .spotify-top-bar {
+            position: fixed;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 16px);
+            max-width: 520px;
+            height: 72px;
+            z-index: 30;
+        }
+
         .stage {
             position: fixed;
-            inset: 0 0 var(--bar-h) 0;
+            inset: var(--spotify-h) 0 var(--bar-h) 0;
+            z-index: 5;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bg);
+            background: transparent;
         }
 
         .stage img {
@@ -37,6 +65,7 @@
             object-fit: contain;
             opacity: 1;
             transition: opacity 0.55s ease;
+            border-radius: 8px;
         }
 
         .stage img.fade-out { opacity: 0; }
@@ -50,13 +79,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            padding: 0 12px;
+            gap: 8px;
+            padding: 0 10px;
             background: rgba(8, 7, 18, 0.92);
             border-top: 1px solid var(--border);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
-            z-index: 20;
+            z-index: 30;
         }
 
         .btn {
@@ -65,10 +94,10 @@
             color: #fff;
             border-radius: 999px;
             cursor: pointer;
-            min-width: 42px;
-            height: 38px;
-            padding: 0 14px;
-            font-size: 0.95rem;
+            min-width: 40px;
+            height: 36px;
+            padding: 0 12px;
+            font-size: 0.9rem;
             font-weight: 600;
             display: inline-flex;
             align-items: center;
@@ -78,16 +107,35 @@
 
         .btn:hover { background: rgba(255, 255, 255, 0.18); }
         .btn:active { transform: scale(0.96); }
+
         .btn.primary {
             background: linear-gradient(45deg, #ff0055, #9900ff);
             border: none;
-            min-width: 46px;
+            min-width: 44px;
+        }
+
+        .btn.music {
+            background: linear-gradient(45deg, #1db954, #169c46);
+            border: none;
+        }
+
+        .btn.rainbow {
+            background: linear-gradient(45deg, #ff0055, #9900ff, #0099ff);
+            background-size: 200% 200%;
+            border: none;
+            animation: gradientShift 4s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .counter {
-            min-width: 88px;
+            min-width: 76px;
             text-align: center;
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             font-weight: 600;
             opacity: 0.9;
             user-select: none;
@@ -95,15 +143,15 @@
 
         .status {
             position: fixed;
-            top: 12px;
+            top: calc(var(--spotify-h) - 6px);
             left: 50%;
             transform: translateX(-50%);
-            z-index: 15;
+            z-index: 25;
             background: rgba(0, 0, 0, 0.55);
             border: 1px solid var(--border);
-            padding: 6px 12px;
+            padding: 5px 12px;
             border-radius: 999px;
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             opacity: 0;
             transition: opacity 0.25s ease;
             pointer-events: none;
@@ -111,13 +159,33 @@
 
         .status.show { opacity: 1; }
 
+        .flake {
+            position: absolute;
+            user-select: none;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
         @media (max-width: 520px) {
+            :root { --spotify-h: 78px; }
             .btn.hide-mobile { display: none; }
-            .counter { min-width: 72px; font-size: 0.75rem; }
+            .counter { min-width: 64px; font-size: 0.72rem; }
         }
     </style>
 </head>
 <body>
+    <canvas id="rainbow-canvas"></canvas>
+    <div id="snow-container"></div>
+
+    <div class="spotify-top-bar"><div id="embed-iframe"></div></div>
+
     <div class="stage">
         <img id="photo" alt="Gemma photo" />
     </div>
@@ -125,14 +193,19 @@
     <div class="status" id="status">Loading photos…</div>
 
     <div class="controls">
-        <button class="btn hide-mobile" id="btn-prev" aria-label="Previous">‹</button>
+        <button class="btn hide-mobile" id="btn-prev" aria-label="Previous photo">‹</button>
         <button class="btn primary" id="btn-play" aria-label="Pause slideshow">⏸</button>
-        <button class="btn hide-mobile" id="btn-next" aria-label="Next">›</button>
-        <button class="btn" id="btn-shuffle" aria-label="Shuffle again">🔀</button>
+        <button class="btn hide-mobile" id="btn-next" aria-label="Next photo">›</button>
+        <button class="btn" id="btn-shuffle" aria-label="Shuffle photos">🔀</button>
+        <button class="btn music" id="btn-music" aria-label="Play or pause music">♫</button>
+        <button class="btn rainbow" id="btn-rainbow" aria-label="More rainbows">Rainbows!</button>
         <span class="counter" id="counter">…</span>
     </div>
 
+    <script src="https://open.spotify.com/embed-podcast/iframe-api/v1" async></script>
     <script>
+        const SPOTIFY_PLAYLIST = 'https://open.spotify.com/playlist/4DaB0NVWfmH4KsyQo66xui?shuffle=true';
+
         let photos = [];
         let order = [];
         let index = 0;
@@ -140,11 +213,14 @@
         let timer = null;
         let playing = true;
         let busy = false;
+        let spotifyController = null;
+        let spotifyPlaying = false;
 
         const photoEl = document.getElementById('photo');
         const counterEl = document.getElementById('counter');
         const statusEl = document.getElementById('status');
         const btnPlay = document.getElementById('btn-play');
+        const btnMusic = document.getElementById('btn-music');
 
         function flashStatus(text) {
             statusEl.textContent = text;
@@ -218,27 +294,65 @@
             }
         }
 
-        function showNext() { showAt(index + 1); }
-        function showPrev() { showAt(index - 1); }
+        function showNext() { return showAt(index + 1); }
+        function showPrev() { return showAt(index - 1); }
 
-        function reshuffle() {
+        function reshufflePhotos() {
             if (!photos.length) return;
             rebuildOrder(0);
-            flashStatus('Shuffled');
+            flashStatus('Photos shuffled');
             showAt(0);
             startTimer();
         }
 
-        document.getElementById('btn-next').addEventListener('click', () => {
-            showNext().then(startTimer);
-        });
-        document.getElementById('btn-prev').addEventListener('click', () => {
-            showPrev().then(startTimer);
-        });
-        document.getElementById('btn-play').addEventListener('click', () => {
-            setPlaying(!playing);
-        });
-        document.getElementById('btn-shuffle').addEventListener('click', reshuffle);
+        function updateMusicButton() {
+            btnMusic.textContent = spotifyPlaying ? '⏸' : '♫';
+        }
+
+        function toggleMusic() {
+            if (!spotifyController) {
+                flashStatus('Use the Spotify bar above to play');
+                return;
+            }
+            spotifyController.togglePlay();
+        }
+
+        function reshuffleSpotify() {
+            if (!spotifyController) return;
+            spotifyController.loadUri(SPOTIFY_PLAYLIST);
+            setTimeout(() => {
+                if (spotifyController) spotifyController.play();
+            }, 400);
+            flashStatus('Playlist shuffle');
+        }
+
+        window.onSpotifyIframeApiReady = (IFrameAPI) => {
+            IFrameAPI.createController(
+                document.getElementById('embed-iframe'),
+                {
+                    width: '100%',
+                    height: '72',
+                    url: SPOTIFY_PLAYLIST
+                },
+                (EmbedController) => {
+                    spotifyController = EmbedController;
+                    EmbedController.addListener('playback_update', (e) => {
+                        spotifyPlaying = !e.data.isPaused;
+                        updateMusicButton();
+                    });
+                    EmbedController.addListener('ready', () => {
+                        reshuffleSpotify();
+                    });
+                }
+            );
+        };
+
+        document.getElementById('btn-next').addEventListener('click', () => showNext().then(startTimer));
+        document.getElementById('btn-prev').addEventListener('click', () => showPrev().then(startTimer));
+        document.getElementById('btn-play').addEventListener('click', () => setPlaying(!playing));
+        document.getElementById('btn-shuffle').addEventListener('click', reshufflePhotos);
+        document.getElementById('btn-music').addEventListener('click', toggleMusic);
+        document.getElementById('btn-rainbow').addEventListener('click', burstRainbows);
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight') showNext().then(startTimer);
@@ -246,7 +360,7 @@
             if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
         });
 
-        async function init() {
+        async function initSlideshow() {
             try {
                 const res = await fetch('photos.json', { cache: 'no-store' });
                 const data = await res.json();
@@ -269,7 +383,75 @@
             setPlaying(true);
         }
 
-        init();
+        initSlideshow();
+
+        const snowContainer = document.getElementById('snow-container');
+        const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc33', '#3399ff', '#9933ff'];
+        const elements = ['🌈', '✨', '⭐', '🎈', '🌸'];
+
+        function createFlake(isBurst = false) {
+            const flake = document.createElement('div');
+            flake.className = 'flake';
+            if (Math.random() > 0.4) {
+                flake.innerText = elements[Math.floor(Math.random() * elements.length)];
+            } else {
+                flake.innerText = '●';
+                flake.style.color = colors[Math.floor(Math.random() * colors.length)];
+                flake.style.textShadow = '0 0 8px ' + flake.style.color;
+            }
+            flake.style.left = (Math.random() * window.innerWidth) + 'px';
+            flake.style.fontSize = (Math.random() * 1.2 + 0.6) + 'rem';
+            const duration = isBurst ? (Math.random() * 2 + 1.5) : (Math.random() * 4 + 4);
+            flake.style.animationDuration = duration + 's';
+            if (isBurst) {
+                flake.style.top = (Math.random() * (window.innerHeight * 0.3) + (window.innerHeight * 0.35)) + 'px';
+            }
+            snowContainer.appendChild(flake);
+            setTimeout(() => flake.remove(), duration * 1000);
+        }
+
+        setInterval(() => {
+            if (document.querySelectorAll('.flake').length < 40) createFlake();
+        }, 300);
+
+        function burstRainbows() {
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => createFlake(true), i * 15);
+            }
+        }
+
+        const canvas = document.getElementById('rainbow-canvas');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        let mouse = { x: width / 2, y: height / 2 };
+        let hue = 0;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+        window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        (function animateCanvas() {
+            ctx.fillStyle = 'rgba(7, 6, 15, 0.08)';
+            ctx.fillRect(0, 0, width, height);
+            const gradient = ctx.createRadialGradient(mouse.x, mouse.y, 10, mouse.x, mouse.y, 140);
+            gradient.addColorStop(0, `hsla(${hue}, 100%, 65%, 0.12)`);
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(mouse.x, mouse.y, 140, 0, Math.PI * 2);
+            ctx.fill();
+            hue = (hue + 1.5) % 360;
+            requestAnimationFrame(animateCanvas);
+        })();
     </script>
 </body>
 </html>
