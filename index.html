@@ -6,266 +6,186 @@
     <title>Gemma's Rainbow World</title>
     <style>
         :root {
-            --bg-color: #0d0b21;
-            --glass-border: rgba(255, 255, 255, 0.18);
-            --top-bar-height: 95px;
-            --bottom-dock-height: 105px;
+            --bg: #07060f;
+            --bar-h: 52px;
+            --glass: rgba(255, 255, 255, 0.1);
+            --border: rgba(255, 255, 255, 0.16);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        body {
-            background: var(--bg-color);
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            height: 100dvh;
-            width: 100vw;
+        html, body {
+            height: 100%;
             overflow: hidden;
-            position: relative;
+            background: var(--bg);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #fff;
         }
 
-        .slideshow {
+        .stage {
             position: fixed;
-            inset: 0;
-            z-index: 5;
-            background: #0d0b21;
+            inset: 0 0 var(--bar-h) 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: var(--top-bar-height) 12px var(--bottom-dock-height);
+            background: var(--bg);
         }
 
-        .slideshow img {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
+        .stage img {
+            width: 100%;
+            height: 100%;
             object-fit: contain;
-            border-radius: 16px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
             opacity: 1;
-            transition: opacity 0.8s ease-in-out;
+            transition: opacity 0.55s ease;
         }
 
-        .slideshow img.fade-out {
-            opacity: 0;
-        }
+        .stage img.fade-out { opacity: 0; }
 
-        .slide-counter {
+        .controls {
             position: fixed;
-            left: 50%;
-            bottom: 92px;
-            transform: translateX(-50%);
-            z-index: 110;
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid var(--glass-border);
-            color: #fff;
-            padding: 6px 14px;
-            border-radius: 999px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-
-        .slide-nav {
-            position: fixed;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 110;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            color: #fff;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 1.4rem;
-            line-height: 1;
-        }
-
-        .slide-nav:hover { background: rgba(255, 255, 255, 0.16); }
-        .slide-nav.prev { left: 12px; }
-        .slide-nav.next { right: 12px; }
-
-        .spotify-top-bar {
-            position: fixed;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 30px);
-            max-width: 480px;
-            height: 80px;
-            z-index: 100;
-        }
-
-        .control-dock {
-            position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 100px;
-            padding: 12px 24px;
-            z-index: 100;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 25px rgba(153, 0, 255, 0.15);
-        }
-
-        .dock-btn {
-            background: none;
-            border: none;
-            fill: #ffffff;
-            cursor: pointer;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: var(--bar-h);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.2s ease;
+            gap: 10px;
+            padding: 0 12px;
+            background: rgba(8, 7, 18, 0.92);
+            border-top: 1px solid var(--border);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            z-index: 20;
         }
 
-        .dock-btn:active { transform: scale(0.9); }
+        .btn {
+            border: 1px solid var(--border);
+            background: var(--glass);
+            color: #fff;
+            border-radius: 999px;
+            cursor: pointer;
+            min-width: 42px;
+            height: 38px;
+            padding: 0 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
 
-        .dock-btn.play-pause {
+        .btn:hover { background: rgba(255, 255, 255, 0.18); }
+        .btn:active { transform: scale(0.96); }
+        .btn.primary {
             background: linear-gradient(45deg, #ff0055, #9900ff);
-            padding: 16px;
-            border-radius: 50%;
-            box-shadow: 0 6px 15px rgba(255, 0, 85, 0.4);
+            border: none;
+            min-width: 46px;
         }
 
-        #rainbow-canvas {
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
+        .counter {
+            min-width: 88px;
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+            opacity: 0.9;
+            user-select: none;
         }
 
-        #snow-container {
+        .status {
             position: fixed;
-            inset: 0;
-            z-index: 2;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .title-overlay {
-            position: fixed;
-            top: calc(var(--top-bar-height) - 8px);
+            top: 12px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 90;
-            text-align: center;
+            z-index: 15;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            opacity: 0;
+            transition: opacity 0.25s ease;
             pointer-events: none;
-            width: calc(100% - 24px);
-            max-width: 480px;
         }
 
-        .title-overlay h1 {
-            font-size: clamp(1.4rem, 5vw, 2rem);
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            background: linear-gradient(to right, #ff3366, #ff9933, #ffff33, #33cc33, #3399ff, #9933ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.7));
-        }
-
-        .title-overlay p {
-            color: #f0f0ff;
-            font-size: clamp(0.8rem, 3vw, 1rem);
-            font-weight: 600;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-        }
-
-        .rainbow-btn {
-            position: fixed;
-            right: 16px;
-            bottom: 92px;
-            z-index: 110;
-            background: linear-gradient(45deg, #ff0055, #9900ff, #0099ff);
-            background-size: 200% 200%;
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            font-size: 0.85rem;
-            font-weight: bold;
-            border-radius: 50px;
-            cursor: pointer;
-            animation: gradientShift 4s ease infinite;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .flake {
-            position: absolute;
-            user-select: none;
-            pointer-events: none;
-            animation: fall linear infinite;
-        }
-
-        @keyframes fall {
-            0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
-        }
+        .status.show { opacity: 1; }
 
         @media (max-width: 520px) {
-            .slide-nav { display: none; }
-            .rainbow-btn {
-                right: 50%;
-                transform: translateX(50%);
-                bottom: 118px;
-            }
+            .btn.hide-mobile { display: none; }
+            .counter { min-width: 72px; font-size: 0.75rem; }
         }
     </style>
 </head>
 <body>
-    <div class="spotify-top-bar"><div id="embed-iframe"></div></div>
-    <canvas id="rainbow-canvas"></canvas>
-    <div id="snow-container"></div>
-
-    <div class="slideshow" id="slideshow">
-        <img id="slide-image" alt="Gemma photo" />
-    </div>
-    <div class="slide-counter" id="slide-counter">Loading…</div>
-    <button class="slide-nav prev" id="slide-prev" aria-label="Previous photo">‹</button>
-    <button class="slide-nav next" id="slide-next" aria-label="Next photo">›</button>
-
-    <div class="title-overlay">
-        <h1>Gemma</h1>
-        <p>Pure Magic & Brilliance ✨</p>
+    <div class="stage">
+        <img id="photo" alt="Gemma photo" />
     </div>
 
-    <button class="rainbow-btn" onclick="burstRainbows()">More Rainbows!</button>
+    <div class="status" id="status">Loading photos…</div>
 
-    <div class="control-dock">
-        <button class="dock-btn play-pause" onclick="handleMediaControl('toggle')" aria-label="Play or Pause">
-            <svg id="play-icon" width="32" height="32" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        </button>
+    <div class="controls">
+        <button class="btn hide-mobile" id="btn-prev" aria-label="Previous">‹</button>
+        <button class="btn primary" id="btn-play" aria-label="Pause slideshow">⏸</button>
+        <button class="btn hide-mobile" id="btn-next" aria-label="Next">›</button>
+        <button class="btn" id="btn-shuffle" aria-label="Shuffle again">🔀</button>
+        <span class="counter" id="counter">…</span>
     </div>
 
-    <script src="https://open.spotify.com/embed-podcast/iframe-api/v1" async></script>
     <script>
-        let PHOTOS = [];
-        let SLIDE_INTERVAL_MS = 5000;
-        let currentSlide = 0;
-        let slideTimer = null;
-        let isTransitioning = false;
+        let photos = [];
+        let order = [];
+        let index = 0;
+        let intervalMs = 5000;
+        let timer = null;
+        let playing = true;
+        let busy = false;
 
-        const slideImage = document.getElementById('slide-image');
-        const slideCounter = document.getElementById('slide-counter');
+        const photoEl = document.getElementById('photo');
+        const counterEl = document.getElementById('counter');
+        const statusEl = document.getElementById('status');
+        const btnPlay = document.getElementById('btn-play');
+
+        function flashStatus(text) {
+            statusEl.textContent = text;
+            statusEl.classList.add('show');
+            clearTimeout(flashStatus._t);
+            flashStatus._t = setTimeout(() => statusEl.classList.remove('show'), 1800);
+        }
+
+        function shuffle(array) {
+            const a = array.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function rebuildOrder(startIndex = 0) {
+            order = shuffle(photos.map((_, i) => i));
+            index = Math.max(0, Math.min(startIndex, order.length - 1));
+        }
 
         function updateCounter() {
-            slideCounter.textContent = PHOTOS.length
-                ? `${currentSlide + 1} / ${PHOTOS.length}`
-                : 'No photos yet';
+            counterEl.textContent = order.length
+                ? `${index + 1} / ${order.length}`
+                : '0 / 0';
+        }
+
+        function setPlaying(on) {
+            playing = on;
+            btnPlay.textContent = on ? '⏸' : '▶';
+            btnPlay.setAttribute('aria-label', on ? 'Pause slideshow' : 'Play slideshow');
+            if (on) startTimer();
+            else clearInterval(timer);
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            if (playing && order.length > 1) {
+                timer = setInterval(() => showNext(), intervalMs);
+            }
         }
 
         function preload(src) {
@@ -277,157 +197,79 @@
             });
         }
 
-        async function showSlide(index) {
-            if (!PHOTOS.length || isTransitioning) return;
-
-            currentSlide = (index + PHOTOS.length) % PHOTOS.length;
-            isTransitioning = true;
+        async function showAt(orderIndex) {
+            if (!order.length || busy) return;
+            busy = true;
+            index = (orderIndex + order.length) % order.length;
+            const src = photos[order[index]];
 
             try {
-                await preload(PHOTOS[currentSlide]);
-                slideImage.classList.add('fade-out');
-                await new Promise(r => setTimeout(r, 250));
-                slideImage.src = PHOTOS[currentSlide];
-                slideImage.alt = `Gemma photo ${currentSlide + 1}`;
-                slideImage.classList.remove('fade-out');
+                await preload(src);
+                photoEl.classList.add('fade-out');
+                await new Promise(r => setTimeout(r, 180));
+                photoEl.src = src;
+                photoEl.alt = `Photo ${index + 1}`;
+                photoEl.classList.remove('fade-out');
                 updateCounter();
             } catch (_) {
-                slideCounter.textContent = 'Photo failed to load';
+                flashStatus('Photo failed to load');
             } finally {
-                isTransitioning = false;
+                busy = false;
             }
         }
 
-        function nextSlide() { showSlide(currentSlide + 1); }
-        function prevSlide() { showSlide(currentSlide - 1); }
+        function showNext() { showAt(index + 1); }
+        function showPrev() { showAt(index - 1); }
 
-        function restartSlideTimer() {
-            clearInterval(slideTimer);
-            if (PHOTOS.length > 1) {
-                slideTimer = setInterval(nextSlide, SLIDE_INTERVAL_MS);
-            }
+        function reshuffle() {
+            if (!photos.length) return;
+            rebuildOrder(0);
+            flashStatus('Shuffled');
+            showAt(0);
+            startTimer();
         }
 
-        document.getElementById('slide-next').addEventListener('click', () => {
-            showSlide(currentSlide + 1).then(restartSlideTimer);
+        document.getElementById('btn-next').addEventListener('click', () => {
+            showNext().then(startTimer);
         });
-        document.getElementById('slide-prev').addEventListener('click', () => {
-            showSlide(currentSlide - 1).then(restartSlideTimer);
+        document.getElementById('btn-prev').addEventListener('click', () => {
+            showPrev().then(startTimer);
+        });
+        document.getElementById('btn-play').addEventListener('click', () => {
+            setPlaying(!playing);
+        });
+        document.getElementById('btn-shuffle').addEventListener('click', reshuffle);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') showNext().then(startTimer);
+            if (e.key === 'ArrowLeft') showPrev().then(startTimer);
+            if (e.key === ' ') { e.preventDefault(); setPlaying(!playing); }
         });
 
-        async function initSlideshow() {
+        async function init() {
             try {
                 const res = await fetch('photos.json', { cache: 'no-store' });
                 const data = await res.json();
-                PHOTOS = Array.isArray(data.photos) ? data.photos : [];
-                SLIDE_INTERVAL_MS = (data.intervalSeconds || 5) * 1000;
+                photos = Array.isArray(data.photos) ? data.photos : [];
+                intervalMs = (data.intervalSeconds || 5) * 1000;
             } catch (_) {
-                PHOTOS = [];
+                photos = [];
             }
 
-            if (!PHOTOS.length) {
-                updateCounter();
+            if (!photos.length) {
+                counterEl.textContent = 'No photos';
+                flashStatus('No photos found');
+                setPlaying(false);
                 return;
             }
 
-            await showSlide(0);
-            restartSlideTimer();
+            rebuildOrder(0);
+            flashStatus(`${photos.length} photos — shuffling`);
+            await showAt(0);
+            setPlaying(true);
         }
 
-        initSlideshow();
-
-        let spotifyController = null;
-        window.onSpotifyIframeApiReady = (IFrameAPI) => {
-            IFrameAPI.createController(
-                document.getElementById('embed-iframe'),
-                { width: '100%', height: '80', uri: 'spotify:playlist:4DaB0NVWfmH4KsyQo66xui', theme: '0' },
-                (EmbedController) => {
-                    spotifyController = EmbedController;
-                    EmbedController.addListener('playback_update', e => {
-                        const playIcon = document.getElementById('play-icon');
-                        playIcon.innerHTML = e.data.isPaused
-                            ? '<path d="M8 5v14l11-7z"/>'
-                            : '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-                    });
-                }
-            );
-        };
-
-        function handleMediaControl(action) {
-            if (!spotifyController) {
-                alert("Custom controls only work when the site is hosted online.\n\nClick Play in the Spotify bar at the top instead.");
-                return;
-            }
-            if (action === 'toggle') spotifyController.togglePlay();
-        }
-
-        const snowContainer = document.getElementById('snow-container');
-        const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc33', '#3399ff', '#9933ff'];
-        const elements = ['🌈', '✨', '⭐', '🎈', '🌸'];
-
-        function createFlake(isBurst = false) {
-            const flake = document.createElement('div');
-            flake.className = 'flake';
-            if (Math.random() > 0.4) {
-                flake.innerText = elements[Math.floor(Math.random() * elements.length)];
-            } else {
-                flake.innerText = '●';
-                flake.style.color = colors[Math.floor(Math.random() * colors.length)];
-                flake.style.textShadow = '0 0 8px ' + flake.style.color;
-            }
-            flake.style.left = (Math.random() * window.innerWidth) + 'px';
-            flake.style.fontSize = (Math.random() * 1.2 + 0.6) + 'rem';
-            const duration = isBurst ? (Math.random() * 2 + 1.5) : (Math.random() * 4 + 4);
-            flake.style.animationDuration = duration + 's';
-            if (isBurst) {
-                flake.style.top = (Math.random() * (window.innerHeight * 0.3) + (window.innerHeight * 0.35)) + 'px';
-            }
-            snowContainer.appendChild(flake);
-            setTimeout(() => flake.remove(), duration * 1000);
-        }
-
-        setInterval(() => {
-            if (document.querySelectorAll('.flake').length < 40) createFlake();
-        }, 300);
-
-        function burstRainbows() {
-            for (let i = 0; i < 30; i++) {
-                setTimeout(() => createFlake(true), i * 15);
-            }
-        }
-
-        const canvas = document.getElementById('rainbow-canvas');
-        const ctx = canvas.getContext('2d');
-        let width = canvas.width = window.innerWidth;
-        let height = canvas.height = window.innerHeight;
-        let mouse = { x: width / 2, y: height / 2 };
-        let hue = 0;
-
-        window.addEventListener('resize', () => {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        });
-        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-        window.addEventListener('touchmove', e => {
-            if (e.touches.length > 0) {
-                mouse.x = e.touches[0].clientX;
-                mouse.y = e.touches[0].clientY;
-            }
-        }, { passive: true });
-
-        (function animateCanvas() {
-            ctx.fillStyle = 'rgba(13, 11, 33, 0.08)';
-            ctx.fillRect(0, 0, width, height);
-            const gradient = ctx.createRadialGradient(mouse.x, mouse.y, 10, mouse.x, mouse.y, 140);
-            gradient.addColorStop(0, `hsla(${hue}, 100%, 65%, 0.1)`);
-            gradient.addColorStop(1, 'transparent');
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(mouse.x, mouse.y, 140, 0, Math.PI * 2);
-            ctx.fill();
-            hue = (hue + 1.5) % 360;
-            requestAnimationFrame(animateCanvas);
-        })();
+        init();
     </script>
 </body>
 </html>
