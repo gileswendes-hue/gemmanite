@@ -1,0 +1,4 @@
+scripts/publish.log
+*.tmp
+Thumbs.db
+desktop.ini

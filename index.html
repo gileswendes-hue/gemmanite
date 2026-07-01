@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gemma's Rainbow World</title>
+    <style>
+        :root {
+            --bg-color: #0d0b21;
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --top-bar-height: 95px;
+            --bottom-dock-height: 105px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg-color);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .slideshow {
+            position: fixed;
+            inset: 0;
+            z-index: 5;
+            background: #0d0b21;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--top-bar-height) 12px var(--bottom-dock-height);
+        }
+
+        .slideshow img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+            opacity: 1;
+            transition: opacity 0.8s ease-in-out;
+        }
+
+        .slideshow img.fade-out {
+            opacity: 0;
+        }
+
+        .slide-counter {
+            position: fixed;
+            left: 50%;
+            bottom: 92px;
+            transform: translateX(-50%);
+            z-index: 110;
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .slide-nav {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 110;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.4rem;
+            line-height: 1;
+        }
+
+        .slide-nav:hover { background: rgba(255, 255, 255, 0.16); }
+        .slide-nav.prev { left: 12px; }
+        .slide-nav.next { right: 12px; }
+
+        .spotify-top-bar {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 30px);
+            max-width: 480px;
+            height: 80px;
+            z-index: 100;
+        }
+
+        .control-dock {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 100px;
+            padding: 12px 24px;
+            z-index: 100;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 25px rgba(153, 0, 255, 0.15);
+        }
+
+        .dock-btn {
+            background: none;
+            border: none;
+            fill: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .dock-btn:active { transform: scale(0.9); }
+
+        .dock-btn.play-pause {
+            background: linear-gradient(45deg, #ff0055, #9900ff);
+            padding: 16px;
+            border-radius: 50%;
+            box-shadow: 0 6px 15px rgba(255, 0, 85, 0.4);
+        }
+
+        #rainbow-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #snow-container {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .title-overlay {
+            position: fixed;
+            top: calc(var(--top-bar-height) - 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 90;
+            text-align: center;
+            pointer-events: none;
+            width: calc(100% - 24px);
+            max-width: 480px;
+        }
+
+        .title-overlay h1 {
+            font-size: clamp(1.4rem, 5vw, 2rem);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: linear-gradient(to right, #ff3366, #ff9933, #ffff33, #33cc33, #3399ff, #9933ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.7));
+        }
+
+        .title-overlay p {
+            color: #f0f0ff;
+            font-size: clamp(0.8rem, 3vw, 1rem);
+            font-weight: 600;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        }
+
+        .rainbow-btn {
+            position: fixed;
+            right: 16px;
+            bottom: 92px;
+            z-index: 110;
+            background: linear-gradient(45deg, #ff0055, #9900ff, #0099ff);
+            background-size: 200% 200%;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            animation: gradientShift 4s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .flake {
+            position: absolute;
+            user-select: none;
+            pointer-events: none;
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+
+        @media (max-width: 520px) {
+            .slide-nav { display: none; }
+            .rainbow-btn {
+                right: 50%;
+                transform: translateX(50%);
+                bottom: 118px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="spotify-top-bar"><div id="embed-iframe"></div></div>
+    <canvas id="rainbow-canvas"></canvas>
+    <div id="snow-container"></div>
+
+    <div class="slideshow" id="slideshow">
+        <img id="slide-image" alt="Gemma photo" />
+    </div>
+    <div class="slide-counter" id="slide-counter">Loading…</div>
+    <button class="slide-nav prev" id="slide-prev" aria-label="Previous photo">‹</button>
+    <button class="slide-nav next" id="slide-next" aria-label="Next photo">›</button>
+
+    <div class="title-overlay">
+        <h1>Gemma</h1>
+        <p>Pure Magic & Brilliance ✨</p>
+    </div>
+
+    <button class="rainbow-btn" onclick="burstRainbows()">More Rainbows!</button>
+
+    <div class="control-dock">
+        <button class="dock-btn play-pause" onclick="handleMediaControl('toggle')" aria-label="Play or Pause">
+            <svg id="play-icon" width="32" height="32" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+    </div>
+
+    <script src="https://open.spotify.com/embed-podcast/iframe-api/v1" async></script>
+    <script>
+        let PHOTOS = [];
+        let SLIDE_INTERVAL_MS = 5000;
+        let currentSlide = 0;
+        let slideTimer = null;
+        let isTransitioning = false;
+
+        const slideImage = document.getElementById('slide-image');
+        const slideCounter = document.getElementById('slide-counter');
+
+        function updateCounter() {
+            slideCounter.textContent = PHOTOS.length
+                ? `${currentSlide + 1} / ${PHOTOS.length}`
+                : 'No photos yet';
+        }
+
+        function preload(src) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(src);
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        async function showSlide(index) {
+            if (!PHOTOS.length || isTransitioning) return;
+
+            currentSlide = (index + PHOTOS.length) % PHOTOS.length;
+            isTransitioning = true;
+
+            try {
+                await preload(PHOTOS[currentSlide]);
+                slideImage.classList.add('fade-out');
+                await new Promise(r => setTimeout(r, 250));
+                slideImage.src = PHOTOS[currentSlide];
+                slideImage.alt = `Gemma photo ${currentSlide + 1}`;
+                slideImage.classList.remove('fade-out');
+                updateCounter();
+            } catch (_) {
+                slideCounter.textContent = 'Photo failed to load';
+            } finally {
+                isTransitioning = false;
+            }
+        }
+
+        function nextSlide() { showSlide(currentSlide + 1); }
+        function prevSlide() { showSlide(currentSlide - 1); }
+
+        function restartSlideTimer() {
+            clearInterval(slideTimer);
+            if (PHOTOS.length > 1) {
+                slideTimer = setInterval(nextSlide, SLIDE_INTERVAL_MS);
+            }
+        }
+
+        document.getElementById('slide-next').addEventListener('click', () => {
+            showSlide(currentSlide + 1).then(restartSlideTimer);
+        });
+        document.getElementById('slide-prev').addEventListener('click', () => {
+            showSlide(currentSlide - 1).then(restartSlideTimer);
+        });
+
+        async function initSlideshow() {
+            try {
+                const res = await fetch('photos.json', { cache: 'no-store' });
+                const data = await res.json();
+                PHOTOS = Array.isArray(data.photos) ? data.photos : [];
+                SLIDE_INTERVAL_MS = (data.intervalSeconds || 5) * 1000;
+            } catch (_) {
+                PHOTOS = [];
+            }
+
+            if (!PHOTOS.length) {
+                updateCounter();
+                return;
+            }
+
+            await showSlide(0);
+            restartSlideTimer();
+        }
+
+        initSlideshow();
+
+        let spotifyController = null;
+        window.onSpotifyIframeApiReady = (IFrameAPI) => {
+            IFrameAPI.createController(
+                document.getElementById('embed-iframe'),
+                { width: '100%', height: '80', uri: 'spotify:playlist:4DaB0NVWfmH4KsyQo66xui', theme: '0' },
+                (EmbedController) => {
+                    spotifyController = EmbedController;
+                    EmbedController.addListener('playback_update', e => {
+                        const playIcon = document.getElementById('play-icon');
+                        playIcon.innerHTML = e.data.isPaused
+                            ? '<path d="M8 5v14l11-7z"/>'
+                            : '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+                    });
+                }
+            );
+        };
+
+        function handleMediaControl(action) {
+            if (!spotifyController) {
+                alert("Custom controls only work when the site is hosted online.\n\nClick Play in the Spotify bar at the top instead.");
+                return;
+            }
+            if (action === 'toggle') spotifyController.togglePlay();
+        }
+
+        const snowContainer = document.getElementById('snow-container');
+        const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc33', '#3399ff', '#9933ff'];
+        const elements = ['🌈', '✨', '⭐', '🎈', '🌸'];
+
+        function createFlake(isBurst = false) {
+            const flake = document.createElement('div');
+            flake.className = 'flake';
+            if (Math.random() > 0.4) {
+                flake.innerText = elements[Math.floor(Math.random() * elements.length)];
+            } else {
+                flake.innerText = '●';
+                flake.style.color = colors[Math.floor(Math.random() * colors.length)];
+                flake.style.textShadow = '0 0 8px ' + flake.style.color;
+            }
+            flake.style.left = (Math.random() * window.innerWidth) + 'px';
+            flake.style.fontSize = (Math.random() * 1.2 + 0.6) + 'rem';
+            const duration = isBurst ? (Math.random() * 2 + 1.5) : (Math.random() * 4 + 4);
+            flake.style.animationDuration = duration + 's';
+            if (isBurst) {
+                flake.style.top = (Math.random() * (window.innerHeight * 0.3) + (window.innerHeight * 0.35)) + 'px';
+            }
+            snowContainer.appendChild(flake);
+            setTimeout(() => flake.remove(), duration * 1000);
+        }
+
+        setInterval(() => {
+            if (document.querySelectorAll('.flake').length < 40) createFlake();
+        }, 300);
+
+        function burstRainbows() {
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => createFlake(true), i * 15);
+            }
+        }
+
+        const canvas = document.getElementById('rainbow-canvas');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        let mouse = { x: width / 2, y: height / 2 };
+        let hue = 0;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('touchmove', e => {
+            if (e.touches.length > 0) {
+                mouse.x = e.touches[0].clientX;
+                mouse.y = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        (function animateCanvas() {
+            ctx.fillStyle = 'rgba(13, 11, 33, 0.08)';
+            ctx.fillRect(0, 0, width, height);
+            const gradient = ctx.createRadialGradient(mouse.x, mouse.y, 10, mouse.x, mouse.y, 140);
+            gradient.addColorStop(0, `hsla(${hue}, 100%, 65%, 0.1)`);
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(mouse.x, mouse.y, 140, 0, Math.PI * 2);
+            ctx.fill();
+            hue = (hue + 1.5) % 360;
+            requestAnimationFrame(animateCanvas);
+        })();
+    </script>
+</body>
+</html>
