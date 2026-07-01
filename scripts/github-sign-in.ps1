@@ -48,8 +48,9 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host 'Sign-in did not complete.' -ForegroundColor Red
     Write-Host ''
     Write-Host 'Alternative: use a Personal Access Token instead.' -ForegroundColor Yellow
-    Write-Host '1. Open https://github.com/settings/tokens/new'
-    Write-Host '2. Note = Gemmanite, tick "repo", click Generate token'
+Write-Host 'Create a CLASSIC token with full "repo" scope:' -ForegroundColor Yellow
+Write-Host '  https://github.com/settings/tokens/new'
+Write-Host '  (Choose "Generate new token (classic)", tick "repo")'
     Write-Host '3. Copy the token (starts with ghp_)'
     Write-Host '4. Run sign-in-with-token.bat and paste it'
 }

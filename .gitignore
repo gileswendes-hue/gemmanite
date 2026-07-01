@@ -1,4 +1,5 @@
 scripts/publish.log
+scripts/_*.ps1
 *.tmp
 Thumbs.db
 desktop.ini

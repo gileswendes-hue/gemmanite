@@ -19,7 +19,7 @@ E:\gemmanite\
 
 1. Edit `site-config.json` if your GitHub username is not `gileswendes`.
 2. Create the repo (pick one):
-   - **GitHub website:** create a new public repo named `gemmanite.co.uk` (empty, no README).
+   - **GitHub website:** create a new public repo named `gemmanite` (empty, no README).
    - **Or with a token:**
      ```powershell
      $env:GITHUB_TOKEN = 'ghp_...'
