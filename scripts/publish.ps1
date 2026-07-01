@@ -52,7 +52,7 @@ function Publish-Site {
         & $git -C $Root remote add $remoteName $remoteUrl
     }
 
-    & $git -C $Root add index.html photos.json CNAME site-config.json .gitignore photos scripts
+    & $git -C $Root add index.html photos.json CNAME site-config.json .gitignore photos scripts README.md publish.bat watch-photos.bat
 
     $status = & $git -C $Root status --porcelain
     if (-not $status) {
@@ -78,6 +78,25 @@ function Publish-Site {
     if ($SkipPush) {
         Write-Log 'SkipPush set; commit created locally only.'
         return
+    }
+
+    if (Get-Command gh -ErrorAction SilentlyContinue) {
+        $ghAuth = & gh auth status 2>&1 | Out-String
+        if ($ghAuth -notmatch 'Logged in') {
+            Write-Log 'GitHub CLI is not signed in. Run: gh auth login --web'
+        } else {
+            $repoSlug = "$($config.githubOwner)/$($config.githubRepo)"
+            $repoCheck = & gh repo view $repoSlug 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 0) {
+                Write-Log "Creating GitHub repo $repoSlug ..."
+                & gh repo create $repoSlug --public --description 'Gemma Rainbow World slideshow site' --source $Root --remote $remoteName --push
+                if ($LASTEXITCODE -eq 0) {
+                    Write-Log 'Repository created and pushed via GitHub CLI.'
+                    return
+                }
+                Write-Log "Could not create repo automatically: $repoCheck"
+            }
+        }
     }
 
     Write-Log 'Pushing to GitHub...'
