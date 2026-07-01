@@ -28,6 +28,22 @@ function Get-GitExe {
 
 $git = Get-GitExe
 
+function Get-GhExe {
+    $cmd = Get-Command gh -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+
+    foreach ($candidate in @(
+        "$env:ProgramFiles\GitHub CLI\gh.exe",
+        "${env:ProgramFiles(x86)}\GitHub CLI\gh.exe"
+    )) {
+        if (Test-Path $candidate) { return $candidate }
+    }
+
+    return $null
+}
+
+$gh = Get-GhExe
+
 function Write-Log {
     param([string]$Message)
     $line = "[{0}] {1}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Message
@@ -52,7 +68,7 @@ function Publish-Site {
         & $git -C $Root remote add $remoteName $remoteUrl
     }
 
-    & $git -C $Root add index.html photos.json CNAME site-config.json .gitignore photos scripts README.md publish.bat watch-photos.bat
+    & $git -C $Root add index.html photos.json CNAME site-config.json .gitignore photos scripts README.md publish.bat watch-photos.bat publish-now.bat
 
     $status = & $git -C $Root status --porcelain
     if (-not $status) {
@@ -80,21 +96,20 @@ function Publish-Site {
         return
     }
 
-    if (Get-Command gh -ErrorAction SilentlyContinue) {
-        $ghAuth = & gh auth status 2>&1 | Out-String
-        if ($ghAuth -notmatch 'Logged in') {
-            Write-Log 'GitHub CLI is not signed in. Run: gh auth login --web'
+    if ($gh) {
+        $ghAuth = & $gh auth status 2>&1 | Out-String
+        if ($ghAuth -notmatch 'Logged in to github.com') {
+            Write-Log 'GitHub CLI is not signed in. Run publish-now.bat to sign in and upload.'
         } else {
             $repoSlug = "$($config.githubOwner)/$($config.githubRepo)"
-            $repoCheck = & gh repo view $repoSlug 2>&1 | Out-String
+            & $gh repo view $repoSlug 2>$null | Out-Null
             if ($LASTEXITCODE -ne 0) {
                 Write-Log "Creating GitHub repo $repoSlug ..."
-                & gh repo create $repoSlug --public --description 'Gemma Rainbow World slideshow site' --source $Root --remote $remoteName --push
+                & $gh repo create $repoSlug --public --description 'Gemma Rainbow World slideshow site' --source $Root --remote $remoteName --push
                 if ($LASTEXITCODE -eq 0) {
                     Write-Log 'Repository created and pushed via GitHub CLI.'
                     return
                 }
-                Write-Log "Could not create repo automatically: $repoCheck"
             }
         }
     }
