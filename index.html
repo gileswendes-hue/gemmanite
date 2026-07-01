@@ -38,7 +38,7 @@
             position: absolute;
             top: 15px;
             width: calc(100% - 30px);
-            max-width: 440px;
+            max-width: 480px;
             height: 80px;
             z-index: 100;
             display: flex;
@@ -56,13 +56,13 @@
         /* --- MEDIA CONTROLS DOCK --- */
         .control-dock {
             position: absolute;
-            bottom: 20px;
+            bottom: 25px;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 100px;
-            padding: 10px 20px;
+            padding: 12px 24px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -87,7 +87,7 @@
 
         .dock-btn.play-pause {
             background: linear-gradient(45deg, #ff0055, #9900ff);
-            padding: 14px;
+            padding: 16px;
             border-radius: 50%;
             box-shadow: 0 6px 15px rgba(255, 0, 85, 0.4);
         }
@@ -115,18 +115,19 @@
             height: 100%;
             z-index: 2;
             pointer-events: none;
+            overflow: hidden;
         }
 
-        /* --- MAIN CENTER CARD (Dynamically Scaled) --- */
+        /* --- MAIN CENTER CARD (Dynamically Scaled & Enlarged) --- */
         .card {
             background: var(--glass-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
-            padding: 3vh 20px;
+            padding: 3vh 24px;
             border-radius: 32px;
             text-align: center;
-            max-width: 440px;
+            max-width: 480px; /* ENLARGED */
             width: 100%;
             max-height: 100%;
             z-index: 10;
@@ -149,10 +150,8 @@
             position: relative;
             margin: 2vh auto;
             width: 100%;
-            max-width: 240px;
-            height: 35vh;
-            min-height: 150px;
-            max-height: 300px;
+            max-width: 340px; /* ENLARGED */
+            height: clamp(200px, 40vh, 400px); /* ENLARGED */
             border-radius: 24px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -189,7 +188,7 @@
         }
 
         h1 {
-            font-size: clamp(1.8rem, 6vw, 2.5rem);
+            font-size: clamp(2rem, 7vw, 2.8rem);
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -203,9 +202,9 @@
 
         p {
             color: #e2e2ff;
-            font-size: clamp(0.9rem, 3.5vw, 1.1rem);
+            font-size: clamp(0.95rem, 4vw, 1.2rem);
             font-weight: 600;
-            margin-bottom: 1vh;
+            margin-bottom: 2vh;
             text-shadow: 0 2px 5px rgba(0,0,0,0.4);
         }
 
@@ -214,8 +213,8 @@
             background-size: 200% 200%;
             color: white;
             border: none;
-            padding: clamp(10px, 2vh, 16px) 32px;
-            font-size: clamp(0.85rem, 3vw, 1rem);
+            padding: clamp(12px, 2.5vh, 18px) 36px;
+            font-size: clamp(0.9rem, 3.5vw, 1.1rem);
             font-weight: bold;
             border-radius: 50px;
             cursor: pointer;
@@ -261,10 +260,10 @@
         <button class="rainbow-btn" onclick="burstRainbows()">More Rainbows!</button>
     </div>
 
-    <!-- UI Audio Controls Bottom Dock (Streamlined for Playlist Control) -->
+    <!-- UI Audio Controls Bottom Dock -->
     <div class="control-dock">
         <button class="dock-btn play-pause" onclick="handleMediaControl('toggle')" aria-label="Play or Pause">
-            <svg id="play-icon" width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="play-icon" width="32" height="32" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>
     </div>
 
@@ -272,14 +271,14 @@
     <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
     <script>
         // --- SPOTIFY CONTROLLER LOGIC ---
-        let spotifyController;
+        let spotifyController = null;
 
         window.onSpotifyIframeApiReady = (IFrameAPI) => {
             const element = document.getElementById('embed-iframe');
             const options = {
                 width: '100%',
                 height: '80',
-                uri: 'spotify:playlist:4DaB0NVWfmH4KsyQo66xui', // Your specific playlist ID!
+                uri: 'spotify:playlist:4DaB0NVWfmH4KsyQo66xui',
                 theme: '0'
             };
             
@@ -300,14 +299,18 @@
         };
 
         function handleMediaControl(action) {
-            if (!spotifyController) return; 
+            // Check if Spotify failed to load properly (often due to being opened via file:// instead of a server)
+            if (!spotifyController) {
+                alert("The custom controls are blocked! 🛑\n\nIf you opened this file directly from your computer (file:///...), your browser prevents the custom button from talking to the Spotify widget for security reasons.\n\nTry clicking Play directly inside the green Spotify bar at the top instead!");
+                return; 
+            }
             
             if (action === 'toggle') {
                 spotifyController.togglePlay();
             }
         }
 
-        // --- RAINBOW SNOW MATRIX ---
+        // --- RAINBOW SNOW MATRIX (FIXED) ---
         const snowContainer = document.getElementById('snow-container');
         const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc33', '#3399ff', '#9933ff'];
         const elements = ['🌈', '✨', '⭐', '🎈', '🌸'];
@@ -324,8 +327,9 @@
                 flake.style.textShadow = '0 0 8px ' + flake.style.color;
             }
 
-            const startLeft = (xPos != null) ? xPos : Math.random() * 100;
-            flake.style.left = startLeft + 'vw';
+            // Fixed horizontal distribution math to ensure they span across the entire window
+            const startLeft = (typeof xPos === 'number') ? xPos : (Math.random() * 100);
+            flake.style.left = startLeft + '%';
             
             const size = Math.random() * 1.2 + 0.6;
             flake.style.fontSize = size + 'rem';
