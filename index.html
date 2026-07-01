@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gemma's Rainbow World</title>
     <style>
         :root {
@@ -22,7 +22,7 @@
         body {
             background: var(--bg-color);
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            height: 100vh;
+            height: 100dvh; 
             width: 100vw;
             overflow: hidden; 
             display: flex;
@@ -30,21 +30,20 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            padding: 20px;
+            padding: 95px 15px 105px 15px; 
         }
 
         /* --- SPOTIFY NOW PLAYING TOP BAR --- */
         .spotify-top-bar {
             position: absolute;
-            top: 20px;
-            width: calc(100% - 40px);
+            top: 15px;
+            width: calc(100% - 30px);
             max-width: 440px;
             height: 80px;
             z-index: 100;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.3s ease;
         }
 
         .spotify-top-bar iframe {
@@ -57,16 +56,16 @@
         /* --- MEDIA CONTROLS DOCK --- */
         .control-dock {
             position: absolute;
-            bottom: 24px;
+            bottom: 20px;
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             border-radius: 100px;
-            padding: 12px 32px;
+            padding: 10px 20px;
             display: flex;
             align-items: center;
-            gap: 28px;
+            justify-content: center;
             z-index: 100;
             box-shadow: 0 15px 35px rgba(0,0,0,0.6), 0 0 25px rgba(153, 0, 255, 0.15);
         }
@@ -82,23 +81,19 @@
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), fill 0.2s ease;
         }
 
-        .dock-btn:hover {
-            transform: scale(1.2);
-            fill: #00ffcc;
-        }
-
         .dock-btn:active {
             transform: scale(0.9);
         }
 
         .dock-btn.play-pause {
             background: linear-gradient(45deg, #ff0055, #9900ff);
-            padding: 12px;
+            padding: 14px;
             border-radius: 50%;
             box-shadow: 0 6px 15px rgba(255, 0, 85, 0.4);
         }
         
         .dock-btn.play-pause:hover {
+            transform: scale(1.1);
             box-shadow: 0 6px 22px rgba(0, 255, 204, 0.5);
         }
 
@@ -122,24 +117,27 @@
             pointer-events: none;
         }
 
-        /* Main Center Card */
+        /* --- MAIN CENTER CARD (Dynamically Scaled) --- */
         .card {
             background: var(--glass-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
-            padding: 24px;
+            padding: 3vh 20px;
             border-radius: 32px;
             text-align: center;
             max-width: 440px;
             width: 100%;
+            max-height: 100%;
             z-index: 10;
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 
                         0 0 50px var(--neon-glow),
                         0 0 50px var(--cyan-glow);
             animation: float 6s ease-in-out infinite;
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
-            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
 
         @keyframes float {
@@ -149,10 +147,12 @@
 
         .image-wrapper {
             position: relative;
-            margin: 16px auto;
+            margin: 2vh auto;
             width: 100%;
             max-width: 240px;
-            height: 300px;
+            height: 35vh;
+            min-height: 150px;
+            max-height: 300px;
             border-radius: 24px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -189,7 +189,7 @@
         }
 
         h1 {
-            font-size: 2.2rem;
+            font-size: clamp(1.8rem, 6vw, 2.5rem);
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -203,11 +203,10 @@
 
         p {
             color: #e2e2ff;
-            font-size: 1rem;
+            font-size: clamp(0.9rem, 3.5vw, 1.1rem);
             font-weight: 600;
-            margin-bottom: 16px;
+            margin-bottom: 1vh;
             text-shadow: 0 2px 5px rgba(0,0,0,0.4);
-            letter-spacing: 0.5px;
         }
 
         .rainbow-btn {
@@ -215,13 +214,13 @@
             background-size: 200% 200%;
             color: white;
             border: none;
-            padding: 12px 32px;
-            font-size: 0.95rem;
+            padding: clamp(10px, 2vh, 16px) 32px;
+            font-size: clamp(0.85rem, 3vw, 1rem);
             font-weight: bold;
             border-radius: 50px;
             cursor: pointer;
             box-shadow: 0 6px 20px rgba(255, 0, 128, 0.35);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s ease;
             outline: none;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -238,19 +237,13 @@
             transform: scale(1.05) translateY(-2px);
             box-shadow: 0 10px 25px rgba(0, 255, 204, 0.5);
         }
-
-        @media (max-height: 660px) {
-            .image-wrapper { max-height: 200px; }
-            .card { padding: 16px; margin-top: 60px; }
-            h1 { font-size: 1.8rem; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Spotify Now Playing Header -->
-    <div class="spotify-top-bar" id="spotify-container">
-        <iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DX10zKzsJ2jva?utm_source=generator&theme=0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    <!-- Spotify Target Element -->
+    <div class="spotify-top-bar">
+        <div id="embed-iframe"></div>
     </div>
 
     <canvas id="rainbow-canvas"></canvas>
@@ -268,38 +261,53 @@
         <button class="rainbow-btn" onclick="burstRainbows()">More Rainbows!</button>
     </div>
 
-    <!-- UI Audio Controls Bottom Dock -->
+    <!-- UI Audio Controls Bottom Dock (Streamlined for Playlist Control) -->
     <div class="control-dock">
-        <button class="dock-btn" onclick="handleMediaControl('back')" aria-label="Previous Track">
-            <svg width="22" height="22" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6L18 18V6z"/></svg>
-        </button>
         <button class="dock-btn play-pause" onclick="handleMediaControl('toggle')" aria-label="Play or Pause">
-            <svg id="play-icon" width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        </button>
-        <button class="dock-btn" onclick="handleMediaControl('next')" aria-label="Next Track">
-            <svg width="22" height="22" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6zm9-12v12h2V6z"/></svg>
+            <svg id="play-icon" width="28" height="28" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>
     </div>
 
+    <!-- Official Spotify IFrame API Script -->
+    <script src="https://open.spotify.com/embed/iframe-api/v1" async></script>
     <script>
-        let isPlaying = false;
+        // --- SPOTIFY CONTROLLER LOGIC ---
+        let spotifyController;
+
+        window.onSpotifyIframeApiReady = (IFrameAPI) => {
+            const element = document.getElementById('embed-iframe');
+            const options = {
+                width: '100%',
+                height: '80',
+                uri: 'spotify:playlist:4DaB0NVWfmH4KsyQo66xui', // Your specific playlist ID!
+                theme: '0'
+            };
+            
+            const callback = (EmbedController) => {
+                spotifyController = EmbedController;
+                
+                // Keep UI play/pause icon in sync with Spotify player state
+                EmbedController.addListener('playback_update', e => {
+                    const playIcon = document.getElementById('play-icon');
+                    if (e.data.isPaused) {
+                        playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>'; // Play icon
+                    } else {
+                        playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // Pause icon
+                    }
+                });
+            };
+            IFrameAPI.createController(element, options, callback);
+        };
+
         function handleMediaControl(action) {
-            console.log(`Media Action Triggered: ${action}`);
-            const spotifyContainer = document.getElementById('spotify-container');
+            if (!spotifyController) return; 
             
             if (action === 'toggle') {
-                isPlaying = !isPlaying;
-                const playIcon = document.getElementById('play-icon');
-                if (isPlaying) {
-                    playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
-                    spotifyContainer.style.opacity = "1";
-                } else {
-                    playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
-                    spotifyContainer.style.opacity = "0.1";
-                }
+                spotifyController.togglePlay();
             }
         }
 
+        // --- RAINBOW SNOW MATRIX ---
         const snowContainer = document.getElementById('snow-container');
         const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc33', '#3399ff', '#9933ff'];
         const elements = ['🌈', '✨', '⭐', '🎈', '🌸'];
@@ -316,7 +324,7 @@
                 flake.style.textShadow = '0 0 8px ' + flake.style.color;
             }
 
-            const startLeft = xPos !== null ? xPos : Math.random() * 100;
+            const startLeft = (xPos != null) ? xPos : Math.random() * 100;
             flake.style.left = startLeft + 'vw';
             
             const size = Math.random() * 1.2 + 0.6;
@@ -351,6 +359,7 @@
             }
         }
 
+        // --- CANVAS BACKDROP ---
         const canvas = document.getElementById('rainbow-canvas');
         const ctx = canvas.getContext('2d');
 
@@ -363,10 +372,12 @@
         });
 
         let mouse = { x: width / 2, y: height / 2 };
+        
         window.addEventListener('mousemove', (e) => {
             mouse.x = e.clientX;
             mouse.y = e.clientY;
         });
+        
         window.addEventListener('touchmove', (e) => {
             if(e.touches.length > 0) {
                 mouse.x = e.touches[0].clientX;
