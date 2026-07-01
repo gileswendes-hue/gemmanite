@@ -6,15 +6,27 @@ Write-Host '=== Gemmanite publish ===' -ForegroundColor Cyan
 Write-Host ''
 
 if (-not (Test-Path $gh)) {
-    Write-Host 'GitHub CLI not found. Install it, then run publish.bat again.' -ForegroundColor Red
+    Write-Host 'GitHub CLI not found. Install it, then run publish-now.bat again.' -ForegroundColor Red
     Read-Host 'Press Enter to close'
     exit 1
 }
 
-$auth = & $gh auth status 2>&1 | Out-String
-if ($auth -notmatch 'Logged in to github.com') {
-    Write-Host 'Sign in to GitHub in the browser window that opens...' -ForegroundColor Yellow
-    & $gh auth login --hostname github.com --git-protocol https --web
+function Test-GhLoggedIn {
+    param([string]$GhExe)
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    $output = & $GhExe auth status 2>&1 | Out-String
+    $ErrorActionPreference = $previous
+    return ($output -match 'Logged in to github.com')
+}
+
+if (-not (Test-GhLoggedIn -GhExe $gh)) {
+    Write-Host 'You are not signed in to GitHub yet.' -ForegroundColor Red
+    Write-Host ''
+    Write-Host 'Run sign-in-to-github.bat first (code appears in that window).' -ForegroundColor Yellow
+    Write-Host 'Or use sign-in-with-token.bat if that is easier.' -ForegroundColor Yellow
+    Read-Host 'Press Enter to close'
+    exit 1
 }
 
 & $publish

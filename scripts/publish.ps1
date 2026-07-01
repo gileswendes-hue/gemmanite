@@ -97,7 +97,10 @@ function Publish-Site {
     }
 
     if ($gh) {
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
         $ghAuth = & $gh auth status 2>&1 | Out-String
+        $ErrorActionPreference = $previous
         if ($ghAuth -notmatch 'Logged in to github.com') {
             Write-Log 'GitHub CLI is not signed in. Run publish-now.bat to sign in and upload.'
         } else {
