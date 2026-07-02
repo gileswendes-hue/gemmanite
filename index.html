@@ -7,7 +7,7 @@
     <style>
         :root {
             --bg: #07060f;
-            --spotify-h: 84px;
+            --spotify-h: 80px;
             --bar-h: 52px;
             --glass: rgba(255, 255, 255, 0.1);
             --border: rgba(255, 255, 255, 0.16);
@@ -17,7 +17,10 @@
 
         html, body {
             height: 100%;
+            width: 100%;
+            max-width: 100vw;
             overflow: hidden;
+            overscroll-behavior: none;
             background: var(--bg);
             font-family: 'Segoe UI', system-ui, sans-serif;
             color: #fff;
@@ -40,13 +43,28 @@
 
         .spotify-top-bar {
             position: fixed;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 16px);
-            max-width: 520px;
-            height: 72px;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            max-width: 100vw;
+            height: var(--spotify-h);
+            padding: 0 8px;
             z-index: 30;
+            overflow: hidden;
+            background: var(--bg);
+        }
+
+        .spotify-top-bar #embed-iframe,
+        .spotify-top-bar iframe {
+            width: 100% !important;
+            max-width: 520px;
+            height: 80px !important;
+            margin: 0 auto;
+            display: block;
+            border: 0;
+            border-radius: 12px;
+            overflow: hidden;
         }
 
         .stage {
@@ -174,7 +192,7 @@
         }
 
         @media (max-width: 520px) {
-            :root { --spotify-h: 78px; }
+            :root { --spotify-h: 80px; }
             .btn.hide-mobile { display: none; }
             .counter { min-width: 64px; font-size: 0.72rem; }
         }
@@ -197,14 +215,14 @@
         <button class="btn primary" id="btn-play" aria-label="Pause slideshow">⏸</button>
         <button class="btn hide-mobile" id="btn-next" aria-label="Next photo">›</button>
         <button class="btn" id="btn-shuffle" aria-label="Shuffle photos">🔀</button>
-        <button class="btn music" id="btn-music" aria-label="Play or pause music">♫</button>
+        <button class="btn music" id="btn-music" aria-label="Play or pause music. Double-click for random song." title="Click: play/pause · Double-click: random song">♫</button>
         <button class="btn rainbow" id="btn-rainbow" aria-label="More rainbows">Rainbows!</button>
         <span class="counter" id="counter">…</span>
     </div>
 
     <script src="https://open.spotify.com/embed-podcast/iframe-api/v1" async></script>
     <script>
-        const SPOTIFY_PLAYLIST = 'https://open.spotify.com/playlist/4DaB0NVWfmH4KsyQo66xui?shuffle=true';
+        const SPOTIFY_PLAYLIST_URL = 'https://open.spotify.com/playlist/4DaB0NVWfmH4KsyQo66xui';
 
         let photos = [];
         let order = [];
@@ -213,8 +231,13 @@
         let timer = null;
         let playing = true;
         let busy = false;
+
         let spotifyController = null;
         let spotifyPlaying = false;
+        let musicTracks = [];
+        let musicOrder = [];
+        let musicIndex = -1;
+        let musicAdvancePending = false;
 
         const photoEl = document.getElementById('photo');
         const counterEl = document.getElementById('counter');
@@ -303,6 +326,33 @@
             flashStatus('Photos shuffled');
             showAt(0);
             startTimer();
+            playRandomMusic(true);
+        }
+
+        function rebuildMusicOrder() {
+            musicOrder = shuffle(musicTracks.map(t => t.url));
+            musicIndex = -1;
+        }
+
+        function playRandomMusic(showMessage = false) {
+            if (!spotifyController || !musicOrder.length) return;
+            musicIndex = Math.floor(Math.random() * musicOrder.length);
+            musicAdvancePending = false;
+            spotifyController.loadEntity(musicOrder[musicIndex]);
+            setTimeout(() => {
+                if (spotifyController) spotifyController.play();
+            }, 450);
+            if (showMessage) flashStatus('Random song');
+        }
+
+        function playNextShuffledMusic() {
+            if (!spotifyController || !musicOrder.length) return;
+            musicIndex = (musicIndex + 1) % musicOrder.length;
+            musicAdvancePending = false;
+            spotifyController.loadEntity(musicOrder[musicIndex]);
+            setTimeout(() => {
+                if (spotifyController) spotifyController.play();
+            }, 450);
         }
 
         function updateMusicButton() {
@@ -317,13 +367,8 @@
             spotifyController.togglePlay();
         }
 
-        function reshuffleSpotify() {
-            if (!spotifyController) return;
-            spotifyController.loadUri(SPOTIFY_PLAYLIST);
-            setTimeout(() => {
-                if (spotifyController) spotifyController.play();
-            }, 400);
-            flashStatus('Playlist shuffle');
+        function toggleMusicShuffle() {
+            playRandomMusic(true);
         }
 
         window.onSpotifyIframeApiReady = (IFrameAPI) => {
@@ -331,17 +376,30 @@
                 document.getElementById('embed-iframe'),
                 {
                     width: '100%',
-                    height: '72',
-                    url: SPOTIFY_PLAYLIST
+                    height: '80',
+                    url: SPOTIFY_PLAYLIST_URL
                 },
                 (EmbedController) => {
                     spotifyController = EmbedController;
+
                     EmbedController.addListener('playback_update', (e) => {
-                        spotifyPlaying = !e.data.isPaused;
+                        const d = e.data || {};
+                        spotifyPlaying = !d.isPaused;
                         updateMusicButton();
+
+                        if (!d.isPaused && d.duration && d.position && d.duration > 0) {
+                            const nearEnd = d.position >= d.duration - 2000;
+                            if (nearEnd && !musicAdvancePending) {
+                                musicAdvancePending = true;
+                                setTimeout(() => playNextShuffledMusic(), 1200);
+                            }
+                        }
                     });
+
                     EmbedController.addListener('ready', () => {
-                        reshuffleSpotify();
+                        if (musicOrder.length) {
+                            playRandomMusic();
+                        }
                     });
                 }
             );
@@ -352,6 +410,10 @@
         document.getElementById('btn-play').addEventListener('click', () => setPlaying(!playing));
         document.getElementById('btn-shuffle').addEventListener('click', reshufflePhotos);
         document.getElementById('btn-music').addEventListener('click', toggleMusic);
+        document.getElementById('btn-music').addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            toggleMusicShuffle();
+        });
         document.getElementById('btn-rainbow').addEventListener('click', burstRainbows);
 
         document.addEventListener('keydown', (e) => {
@@ -362,12 +424,20 @@
 
         async function initSlideshow() {
             try {
-                const res = await fetch('photos.json', { cache: 'no-store' });
-                const data = await res.json();
+                const [photosRes, tracksRes] = await Promise.all([
+                    fetch('photos.json', { cache: 'no-store' }),
+                    fetch('spotify-tracks.json', { cache: 'no-store' })
+                ]);
+                const data = await photosRes.json();
                 photos = Array.isArray(data.photos) ? data.photos : [];
                 intervalMs = (data.intervalSeconds || 5) * 1000;
+
+                const trackData = await tracksRes.json();
+                musicTracks = Array.isArray(trackData.tracks) ? trackData.tracks : [];
+                rebuildMusicOrder();
             } catch (_) {
                 photos = [];
+                musicTracks = [];
             }
 
             if (!photos.length) {
@@ -381,6 +451,10 @@
             flashStatus(`${photos.length} photos — shuffling`);
             await showAt(0);
             setPlaying(true);
+
+            if (spotifyController && musicOrder.length) {
+                playRandomMusic();
+            }
         }
 
         initSlideshow();
