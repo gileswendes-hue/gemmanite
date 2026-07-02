@@ -8,6 +8,8 @@
         :root {
             --bg: #07060f;
             --spotify-h: 80px;
+            --spotify-gap: 20px;
+            --stage-top: calc(var(--spotify-h) + var(--spotify-gap));
             --bar-h: 52px;
             --glass: rgba(255, 255, 255, 0.1);
             --border: rgba(255, 255, 255, 0.16);
@@ -49,10 +51,11 @@
             width: 100%;
             max-width: 100vw;
             height: var(--spotify-h);
-            padding: 0 8px;
+            padding: 0 8px 0;
             z-index: 30;
             overflow: hidden;
             background: var(--bg);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .spotify-top-bar #embed-iframe,
@@ -69,11 +72,12 @@
 
         .stage {
             position: fixed;
-            inset: var(--spotify-h) 0 var(--bar-h) 0;
+            inset: var(--stage-top) 0 var(--bar-h) 0;
             z-index: 5;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 8px 10px 0;
             background: transparent;
         }
 
@@ -161,7 +165,7 @@
 
         .status {
             position: fixed;
-            top: calc(var(--spotify-h) - 6px);
+            top: calc(var(--stage-top) - 10px);
             left: 50%;
             transform: translateX(-50%);
             z-index: 25;
@@ -239,6 +243,8 @@
         let musicOrder = [];
         let musicIndex = -1;
         let musicAdvancePending = false;
+        let musicBootstrapped = false;
+        let currentTrackUrl = '';
 
         const photoEl = document.getElementById('photo');
         const counterEl = document.getElementById('counter');
@@ -385,25 +391,33 @@
             }
         }
 
+        function startMusicOnce() {
+            if (musicBootstrapped || !spotifyController || !musicOrder.length) return;
+            musicBootstrapped = true;
+            playRandomMusic();
+        }
+
+        function loadMusicTrack(url) {
+            if (!spotifyController || !url || url === currentTrackUrl) return;
+            currentTrackUrl = url;
+            musicAdvancePending = false;
+            spotifyController.loadEntity(url);
+            setTimeout(() => {
+                if (spotifyController) spotifyController.play();
+            }, 700);
+        }
+
         function playRandomMusic(showMessage = false) {
             if (!spotifyController || !musicOrder.length) return;
             musicIndex = Math.floor(Math.random() * musicOrder.length);
-            musicAdvancePending = false;
-            spotifyController.loadEntity(musicOrder[musicIndex]);
-            setTimeout(() => {
-                if (spotifyController) spotifyController.play();
-            }, 450);
+            loadMusicTrack(musicOrder[musicIndex]);
             if (showMessage) flashStatus('Random song');
         }
 
         function playNextShuffledMusic() {
             if (!spotifyController || !musicOrder.length) return;
             musicIndex = (musicIndex + 1) % musicOrder.length;
-            musicAdvancePending = false;
-            spotifyController.loadEntity(musicOrder[musicIndex]);
-            setTimeout(() => {
-                if (spotifyController) spotifyController.play();
-            }, 450);
+            loadMusicTrack(musicOrder[musicIndex]);
         }
 
         function updateMusicButton() {
@@ -438,19 +452,19 @@
                         spotifyPlaying = !d.isPaused;
                         updateMusicButton();
 
-                        if (!d.isPaused && d.duration && d.position && d.duration > 0) {
-                            const nearEnd = d.position >= d.duration - 2000;
+                        const duration = Number(d.duration) || 0;
+                        const position = Number(d.position) || 0;
+                        if (!d.isPaused && duration > 15000 && position > 10000) {
+                            const nearEnd = position >= duration - 3000;
                             if (nearEnd && !musicAdvancePending) {
                                 musicAdvancePending = true;
-                                setTimeout(() => playNextShuffledMusic(), 1200);
+                                setTimeout(() => playNextShuffledMusic(), 1500);
                             }
                         }
                     });
 
                     EmbedController.addListener('ready', () => {
-                        if (musicOrder.length) {
-                            playRandomMusic();
-                        }
+                        startMusicOnce();
                     });
                 }
             );
@@ -498,10 +512,7 @@
             flashStatus(`${photos.length} photos — shuffling${songMsg}`);
             await showAt(0);
             setPlaying(true);
-
-            if (spotifyController && musicOrder.length) {
-                playRandomMusic();
-            }
+            startMusicOnce();
         }
 
         initSlideshow();
