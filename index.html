@@ -222,8 +222,8 @@
 
     <script src="https://open.spotify.com/embed-podcast/iframe-api/v1" async></script>
     <script>
-        const SPOTIFY_PLAYLIST_URL = 'https://open.spotify.com/playlist/4DaB0NVWfmH4KsyQo66xui';
-        const TRACK_POLL_MS = 15 * 60 * 1000;
+        const SPOTIFY_PLAYLIST_ID = '4DaB0NVWfmH4KsyQo66xui';
+        const SPOTIFY_PLAYLIST_URL = `https://open.spotify.com/playlist/${SPOTIFY_PLAYLIST_ID}`;
 
         let photos = [];
         let order = [];
@@ -239,7 +239,6 @@
         let musicOrder = [];
         let musicIndex = -1;
         let musicAdvancePending = false;
-        let knownTrackIds = new Set();
 
         const photoEl = document.getElementById('photo');
         const counterEl = document.getElementById('counter');
@@ -336,23 +335,54 @@
             musicIndex = -1;
         }
 
-        function applyTrackList(tracks, isRefresh = false) {
-            const incoming = Array.isArray(tracks) ? tracks : [];
-            const hadNew = isRefresh && incoming.some(t => t.id && !knownTrackIds.has(t.id));
-            musicTracks = incoming;
-            knownTrackIds = new Set(incoming.map(t => t.id).filter(Boolean));
-            rebuildMusicOrder();
-            return hadNew;
+        function parseTracksFromEmbedHtml(html, playlistId) {
+            const uris = [...new Set([...html.matchAll(/"uri":"(spotify:track:[^"]+)"/g)].map(m => m[1]))];
+            return uris.map(uri => {
+                const id = uri.replace('spotify:track:', '');
+                return {
+                    id,
+                    uri,
+                    url: `https://open.spotify.com/track/${id}?context=spotify:playlist:${playlistId}`
+                };
+            });
         }
 
-        async function refreshTracksFromServer() {
+        function applyTrackList(tracks) {
+            musicTracks = Array.isArray(tracks) ? tracks : [];
+            rebuildMusicOrder();
+        }
+
+        async function pollPlaylistOnLoad() {
+            const embedUrl = `https://open.spotify.com/embed/playlist/${SPOTIFY_PLAYLIST_ID}`;
+            const bust = Date.now();
+
             try {
-                const res = await fetch('spotify-tracks.json', { cache: 'no-store' });
-                const data = await res.json();
-                if (applyTrackList(data.tracks, true)) {
-                    flashStatus(`${musicTracks.length} songs — new tracks added`);
+                const res = await fetch(embedUrl, { cache: 'no-store' });
+                if (res.ok) {
+                    const tracks = parseTracksFromEmbedHtml(await res.text(), SPOTIFY_PLAYLIST_ID);
+                    if (tracks.length) {
+                        applyTrackList(tracks);
+                        return;
+                    }
                 }
-            } catch (_) { /* ignore */ }
+            } catch (_) { /* CORS or network — fall back to published manifest */ }
+
+            const sources = [
+                `https://raw.githubusercontent.com/gileswendes-hue/gemmanite/main/spotify-tracks.json?t=${bust}`,
+                `spotify-tracks.json?t=${bust}`
+            ];
+
+            for (const url of sources) {
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (Array.isArray(data.tracks) && data.tracks.length) {
+                        applyTrackList(data.tracks);
+                        return;
+                    }
+                } catch (_) { /* try next source */ }
+            }
         }
 
         function playRandomMusic(showMessage = false) {
@@ -445,20 +475,15 @@
 
         async function initSlideshow() {
             try {
-                const [photosRes, tracksRes] = await Promise.all([
-                    fetch('photos.json', { cache: 'no-store' }),
-                    fetch('spotify-tracks.json', { cache: 'no-store' })
-                ]);
+                const photosRes = await fetch(`photos.json?t=${Date.now()}`, { cache: 'no-store' });
                 const data = await photosRes.json();
                 photos = Array.isArray(data.photos) ? data.photos : [];
                 intervalMs = (data.intervalSeconds || 5) * 1000;
 
-                const trackData = await tracksRes.json();
-                applyTrackList(trackData.tracks);
+                await pollPlaylistOnLoad();
             } catch (_) {
                 photos = [];
                 musicTracks = [];
-                knownTrackIds = new Set();
             }
 
             if (!photos.length) {
@@ -469,7 +494,8 @@
             }
 
             rebuildOrder(0);
-            flashStatus(`${photos.length} photos — shuffling`);
+            const songMsg = musicTracks.length ? ` · ${musicTracks.length} songs shuffled` : '';
+            flashStatus(`${photos.length} photos — shuffling${songMsg}`);
             await showAt(0);
             setPlaying(true);
 
@@ -479,7 +505,6 @@
         }
 
         initSlideshow();
-        setInterval(refreshTracksFromServer, TRACK_POLL_MS);
 
         const snowContainer = document.getElementById('snow-container');
         const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc33', '#3399ff', '#9933ff'];
