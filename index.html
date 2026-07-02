@@ -223,6 +223,7 @@
     <script src="https://open.spotify.com/embed-podcast/iframe-api/v1" async></script>
     <script>
         const SPOTIFY_PLAYLIST_URL = 'https://open.spotify.com/playlist/4DaB0NVWfmH4KsyQo66xui';
+        const TRACK_POLL_MS = 15 * 60 * 1000;
 
         let photos = [];
         let order = [];
@@ -238,6 +239,7 @@
         let musicOrder = [];
         let musicIndex = -1;
         let musicAdvancePending = false;
+        let knownTrackIds = new Set();
 
         const photoEl = document.getElementById('photo');
         const counterEl = document.getElementById('counter');
@@ -332,6 +334,25 @@
         function rebuildMusicOrder() {
             musicOrder = shuffle(musicTracks.map(t => t.url));
             musicIndex = -1;
+        }
+
+        function applyTrackList(tracks, isRefresh = false) {
+            const incoming = Array.isArray(tracks) ? tracks : [];
+            const hadNew = isRefresh && incoming.some(t => t.id && !knownTrackIds.has(t.id));
+            musicTracks = incoming;
+            knownTrackIds = new Set(incoming.map(t => t.id).filter(Boolean));
+            rebuildMusicOrder();
+            return hadNew;
+        }
+
+        async function refreshTracksFromServer() {
+            try {
+                const res = await fetch('spotify-tracks.json', { cache: 'no-store' });
+                const data = await res.json();
+                if (applyTrackList(data.tracks, true)) {
+                    flashStatus(`${musicTracks.length} songs — new tracks added`);
+                }
+            } catch (_) { /* ignore */ }
         }
 
         function playRandomMusic(showMessage = false) {
@@ -433,11 +454,11 @@
                 intervalMs = (data.intervalSeconds || 5) * 1000;
 
                 const trackData = await tracksRes.json();
-                musicTracks = Array.isArray(trackData.tracks) ? trackData.tracks : [];
-                rebuildMusicOrder();
+                applyTrackList(trackData.tracks);
             } catch (_) {
                 photos = [];
                 musicTracks = [];
+                knownTrackIds = new Set();
             }
 
             if (!photos.length) {
@@ -458,6 +479,7 @@
         }
 
         initSlideshow();
+        setInterval(refreshTracksFromServer, TRACK_POLL_MS);
 
         const snowContainer = document.getElementById('snow-container');
         const colors = ['#ff3366', '#ff9933', '#ffff33', '#33cc33', '#3399ff', '#9933ff'];

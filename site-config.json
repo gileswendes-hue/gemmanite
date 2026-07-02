@@ -4,5 +4,7 @@
   "githubRepo": "gemmanite",
   "branch": "main",
   "photosDir": "photos",
-  "slideIntervalSeconds": 5
+  "slideIntervalSeconds": 5,
+  "spotifyPlaylistId": "4DaB0NVWfmH4KsyQo66xui",
+  "playlistPollMinutes": 15
 }

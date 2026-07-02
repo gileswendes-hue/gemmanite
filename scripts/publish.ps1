@@ -52,6 +52,9 @@ function Write-Log {
 }
 
 function Publish-Site {
+    Write-Log 'Syncing Spotify playlist...'
+    & (Join-Path $PSScriptRoot 'generate-spotify-tracks.ps1') -ConfigPath $ConfigPath
+
     Write-Log 'Generating photos manifest...'
     & (Join-Path $PSScriptRoot 'generate-photos-manifest.ps1') -Root $Root -ConfigPath $ConfigPath
 
@@ -68,7 +71,7 @@ function Publish-Site {
         & $git -C $Root remote add $remoteName $remoteUrl
     }
 
-    & $git -C $Root add index.html photos.json spotify-tracks.json CNAME site-config.json .gitignore photos scripts README.md publish.bat watch-photos.bat publish-now.bat
+    & $git -C $Root add index.html photos.json spotify-tracks.json CNAME site-config.json .gitignore photos scripts README.md publish.bat watch-photos.bat publish-now.bat poll-playlist.bat .github
 
     $status = & $git -C $Root status --porcelain
     if (-not $status) {
@@ -78,7 +81,16 @@ function Publish-Site {
 
     if (-not $CommitMessage) {
         $photoCount = (Get-Content (Join-Path $Root 'photos.json') -Raw | ConvertFrom-Json).count
-        $CommitMessage = "Update site photos ($photoCount images)"
+        $trackCount = (Get-Content (Join-Path $Root 'spotify-tracks.json') -Raw | ConvertFrom-Json).count
+        $trackChanged = $status -match 'spotify-tracks\.json'
+        $photosChanged = $status -match '(^|\s)(photos/|photos\.json)'
+        if ($trackChanged -and -not $photosChanged) {
+            $CommitMessage = "Update Spotify playlist ($trackCount tracks)"
+        } elseif ($trackChanged -and $photosChanged) {
+            $CommitMessage = "Update photos ($photoCount) and Spotify playlist ($trackCount tracks)"
+        } else {
+            $CommitMessage = "Update site photos ($photoCount images)"
+        }
     }
 
     $gitName = & $git -C $Root config user.name 2>$null

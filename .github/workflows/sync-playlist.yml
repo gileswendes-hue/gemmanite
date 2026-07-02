@@ -1,0 +1,33 @@
+name: Sync Spotify playlist
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch playlist tracks
+        shell: pwsh
+        run: ./scripts/generate-spotify-tracks.ps1
+
+      - name: Commit and push if changed
+        shell: pwsh
+        run: |
+          git config user.name 'Gemma Site'
+          git config user.email 'gemmanite@users.noreply.github.com'
+          git add spotify-tracks.json
+          if (-not (git diff --cached --quiet)) {
+            $count = (Get-Content spotify-tracks.json -Raw | ConvertFrom-Json).count
+            git commit -m "Update Spotify playlist ($count tracks)"
+            git push
+          } else {
+            Write-Host 'No playlist changes.'
+          }
