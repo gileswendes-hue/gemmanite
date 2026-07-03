@@ -6,5 +6,5 @@
   "photosDir": "photos",
   "slideIntervalSeconds": 5,
   "spotifyPlaylistId": "4DaB0NVWfmH4KsyQo66xui",
-  "playlistPollMinutes": 15
+  "nowPlayingApiUrl": "https://helpdesk.kingsburyhigh.org.uk/api/gemmanite/now-playing"
 }
