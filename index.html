@@ -370,13 +370,24 @@
         }
 
         async function refreshNowPlaying() {
-            try {
-                const res = await fetch(`${nowPlayingApi}?t=${Date.now()}`, { cache: 'no-store' });
-                const data = await res.json();
-                updateNowPlayingUI(data);
-            } catch (_) {
-                updateNowPlayingUI({ ok: false, track: null });
+            const sources = [
+                `${nowPlayingApi}?t=${Date.now()}`,
+                `now-playing.json?t=${Date.now()}`
+            ];
+
+            for (const url of sources) {
+                try {
+                    const res = await fetch(url, { cache: 'no-store' });
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (data && (data.ok || data.configured === false || data.track)) {
+                        updateNowPlayingUI(data);
+                        return;
+                    }
+                } catch (_) { /* try next source */ }
             }
+
+            updateNowPlayingUI({ ok: false, track: null });
         }
 
         async function loadSiteConfig() {

@@ -71,7 +71,7 @@ function Publish-Site {
         & $git -C $Root remote add $remoteName $remoteUrl
     }
 
-    & $git -C $Root add index.html photos.json spotify-tracks.json CNAME site-config.json .gitignore photos scripts README.md publish.bat watch-photos.bat publish-now.bat poll-playlist.bat sync-playlist.bat .github
+    & $git -C $Root add index.html photos.json spotify-tracks.json now-playing.json CNAME site-config.json .gitignore photos scripts README.md publish.bat watch-photos.bat publish-now.bat poll-playlist.bat sync-playlist.bat setup-spotify-auth.bat .github
 
     $status = & $git -C $Root status --porcelain
     if (-not $status) {

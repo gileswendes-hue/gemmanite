@@ -1,0 +1,71 @@
+name: Sync now playing
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Spotify now playing
+        shell: bash
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SPOTIFY_CLIENT_ID:-}" ] || [ -z "${SPOTIFY_CLIENT_SECRET:-}" ] || [ -z "${SPOTIFY_REFRESH_TOKEN:-}" ]; then
+            echo "Spotify secrets not configured on GitHub."
+            exit 0
+          fi
+          TOKEN=$(curl -sS -X POST https://accounts.spotify.com/api/token \
+            -H "Authorization: Basic $(printf '%s:%s' "$SPOTIFY_CLIENT_ID" "$SPOTIFY_CLIENT_SECRET" | base64 -w0)" \
+            -H 'Content-Type: application/x-www-form-urlencoded' \
+            -d "grant_type=refresh_token&refresh_token=$SPOTIFY_REFRESH_TOKEN" | jq -r '.access_token')
+          HTTP=$(curl -sS -w '%{http_code}' -o /tmp/spotify-now.json \
+            -H "Authorization: Bearer $TOKEN" \
+            https://api.spotify.com/v1/me/player/currently-playing)
+          if [ "$HTTP" = "204" ]; then
+            jq -n '{ok:true,playing:false,track:null,updatedAt:(now|todateiso8601)}' > now-playing.json
+          elif [ "$HTTP" = "200" ]; then
+            jq '{
+              ok: true,
+              playing: (.is_playing != false),
+              track: {
+                id: .item.id,
+                name: .item.name,
+                artist: ([.item.artists[].name] | join(", ")),
+                album: .item.album.name,
+                imageUrl: (.item.album.images[0].url // ""),
+                url: .item.external_urls.spotify,
+                progressMs: (.progress_ms // 0),
+                durationMs: (.item.duration_ms // 0)
+              },
+              updatedAt: (now|todateiso8601)
+            }' /tmp/spotify-now.json > now-playing.json
+          else
+            echo "Spotify API returned HTTP $HTTP"
+            cat /tmp/spotify-now.json || true
+            exit 1
+          fi
+
+      - name: Commit and push if changed
+        shell: bash
+        run: |
+          git config user.name 'Gemma Site'
+          git config user.email 'gemmanite@users.noreply.github.com'
+          git add now-playing.json
+          if git diff --cached --quiet; then
+            echo 'No now-playing changes.'
+          else
+            git commit -m "Update now playing"
+            git push
+          fi
